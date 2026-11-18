@@ -6,28 +6,13 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Install Dependencies') {
+        stage('Start Web Server') {
             steps {
-                // Installs packages if a package.json exists in your repo
-                script {
-                    sh '''
-                        if [ -f package.json ]; then
-                            npm install
-                        else
-                            echo "No package.json found, skipping npm install."
-                        fi
-                    '''
-                }
-            }
-        }
-        stage('Start Application') {
-            steps {
-                // Stop any previous running instance on port 3000 to prevent conflicts
-                sh 'fuser -k 3000/tcp || true'
+                // Stop any existing Python web server running on port 8000
+                sh 'pkill -f "http.server 8000" || true'
                 
-                // Run the Node.js application in the background using nohup
-                // This ensures the app stays open and running after the Jenkins build finishes
-                sh 'nohup node app2.js > app.log 2>&1 &'
+                // Start a detached static web server on port 8000 so Jenkins does not kill it
+                sh 'JENKINS_NODE_COOKIE=dontKillMe nohup python3 -m http.server 8000 > server.log 2>&1 &'
             }
         }
     }
